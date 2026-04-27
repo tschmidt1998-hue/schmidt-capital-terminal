@@ -3,7 +3,7 @@ name: Bootstrap Project Upload
 on:
   push:
     paths:
-      - ".github/bootstrap/project.tar.gz.b64"
+      - ".github/bootstrap/chunks/**"
       - ".github/workflows/bootstrap-project-upload.yml"
   workflow_dispatch:
 
@@ -19,8 +19,9 @@ jobs:
 
       - name: Decode project archive
         run: |
-          test -f .github/bootstrap/project.tar.gz.b64
-          base64 -d .github/bootstrap/project.tar.gz.b64 > /tmp/project.tar.gz
+          test -d .github/bootstrap/chunks
+          cat .github/bootstrap/chunks/chunk-*.b64 > /tmp/project.tar.gz.b64
+          base64 -d /tmp/project.tar.gz.b64 > /tmp/project.tar.gz
           mkdir -p /tmp/project
           tar -xzf /tmp/project.tar.gz -C /tmp/project
 
@@ -28,7 +29,7 @@ jobs:
         run: |
           rsync -a --delete \
             --exclude='.git' \
-            --exclude='.github/bootstrap/project.tar.gz.b64' \
+            --exclude='.github/bootstrap/chunks' \
             /tmp/project/ ./
           rm -rf .github/bootstrap
           rm -f .github/workflows/bootstrap-project-upload.yml
