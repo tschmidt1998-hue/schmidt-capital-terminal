@@ -1,0 +1,46 @@
+name: Bootstrap Project Upload
+
+on:
+  push:
+    paths:
+      - ".github/bootstrap/project.tar.gz.b64"
+      - ".github/workflows/bootstrap-project-upload.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  unpack-project:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Decode project archive
+        run: |
+          test -f .github/bootstrap/project.tar.gz.b64
+          base64 -d .github/bootstrap/project.tar.gz.b64 > /tmp/project.tar.gz
+          mkdir -p /tmp/project
+          tar -xzf /tmp/project.tar.gz -C /tmp/project
+
+      - name: Replace repository contents with project files
+        run: |
+          rsync -a --delete \
+            --exclude='.git' \
+            --exclude='.github/bootstrap/project.tar.gz.b64' \
+            /tmp/project/ ./
+          rm -rf .github/bootstrap
+          rm -f .github/workflows/bootstrap-project-upload.yml
+
+      - name: Commit uploaded project
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No project changes to commit."
+            exit 0
+          fi
+          git commit -m "Upload trading intelligence platform"
+          git push
